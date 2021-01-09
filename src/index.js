@@ -1,7 +1,7 @@
 const fs = require('fs');
 const { resolve } = require('path');
 const prompt = require('prompt');
-
+const _ = require('lodash');
 const chalk = require('chalk');
 const parse = require('csv-parse/lib/sync');
 const { execSync } = require('child_process');
@@ -11,8 +11,12 @@ const { prepareMetadata } = require('./helpers/prepareMetadata');
 const filename = process.argv[2];
 const trackListPath = resolve(__dirname, `../input/${filename}.csv`);
 const audioPath = resolve(__dirname, `../input/${filename}.m4a`);
+const outputDir = `./output/${filename}`;
 
-const codec = ['codec:a', 'libvo_aacenc'];
+// set a codec here
+const codec = ['codec:a', 'aac'];
+
+// set audio encoding settings
 const audioSettings = [
   ['ac', '2'],
   ['ar', '44100'],
@@ -43,19 +47,25 @@ if (!filename) {
           ['i', audioPath],
           codec,
           ...audioSettings,
+          ['loglevel', 'fatal'],
           ['ss', start],
           ['to', end],
           ...prepareMetadata([
-            ['track', index],
+            ['track', index + 1],
             ['title', title],
             ['album', result.album],
             ['album_artist', result.artist]
           ])
         ]);
 
-        console.log(`${chalk.gray(`Exporting Track ${index} —`)} ${chalk.green(title)}${chalk.gray('…')}`)
-        execSync(`ffmpeg ${options} ./output/${index}-${filename}.m4a`);
+        if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir);
+        }
+
+        console.log(`${chalk.gray(`Exporting Track ${index + 1} —`)} ${chalk.green(title)}${chalk.gray('…')}`)
+        execSync(`ffmpeg ${options} ${outputDir}/${index + 1}-${_.kebabCase(title)}.m4a`);
       });
+      console.log(`${chalk.gray('…and')} ${chalk.greenBright('finished')} 🎉`);
     });
   } else {
     console.log(`${chalk.red('ERROR!')} Either source audio or track list are missing!`);

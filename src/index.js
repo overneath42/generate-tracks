@@ -5,8 +5,7 @@ const _ = require('lodash');
 const chalk = require('chalk');
 const parse = require('csv-parse/lib/sync');
 const { execSync } = require('child_process');
-const { prepareOptions } = require('./helpers/prepareOptions');
-const { prepareMetadata } = require('./helpers/prepareMetadata');
+const { prepareOptions, prepareMetadata } = require('./helpers');
 
 const filename = process.argv[2];
 const trackListPath = resolve(__dirname, `../input/${filename}.csv`);
@@ -14,7 +13,7 @@ const audioPath = resolve(__dirname, `../input/${filename}.m4a`);
 const outputDir = `./output/${filename}`;
 
 // set a codec here
-const codec = ['codec:a', 'aac'];
+const codec = 'aac';
 
 // set audio encoding settings
 const audioSettings = [
@@ -40,14 +39,15 @@ if (!filename) {
         columns: true
       });
 
-      console.log(`${chalk.gray('Preparing the album')} ${chalk.blue(result.album)} ${chalk.gray('by')} ${chalk.blue(result.artist)}…`);
+      console.log(`${chalk.gray(`Preparing the album ${chalk.blue(result.album)} by ${chalk.blue(result.artist)} …`)}`);
+
       trackList.forEach((track, index) => {
         const { start, end, title } = track;
         const options = prepareOptions([
           ['i', audioPath],
-          codec,
-          ...audioSettings,
           ['loglevel', 'fatal'],
+          ['codec:a', codec],
+          ...audioSettings,
           ['ss', start],
           ['to', end],
           ...prepareMetadata([
@@ -62,12 +62,12 @@ if (!filename) {
           fs.mkdirSync(outputDir);
         }
 
-        console.log(`${chalk.gray(`Exporting Track ${index + 1} —`)} ${chalk.green(title)}${chalk.gray('…')}`)
+        console.log(`${chalk.gray(`Exporting Track ${index + 1} —`)} ${chalk.green(title)}`)
         execSync(`ffmpeg ${options} ${outputDir}/${index + 1}-${_.kebabCase(title)}.m4a`);
       });
-      console.log(`${chalk.gray('…and')} ${chalk.greenBright('finished')} 🎉`);
+      console.log(`${chalk.gray('…and')} ${chalk.yellowBright('finished')} 🎉`);
     });
   } else {
-    console.log(`${chalk.red('ERROR!')} Either source audio or track list are missing!`);
+    console.log(`${chalk.red('ERROR!')} ${chalk.gray('Either source audio or track list are missing!')}`);
   }
 }
